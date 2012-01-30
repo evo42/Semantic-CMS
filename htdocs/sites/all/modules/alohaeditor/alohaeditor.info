@@ -1,0 +1,4 @@
+name = Aloha Editor
+description = HTML5 WYSIWYG Editor
+package = User interface
+core = 7.x

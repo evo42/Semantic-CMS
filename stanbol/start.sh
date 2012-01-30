@@ -1,0 +1,1 @@
+java -Xmx1g -jar iks-5.3-launcher.jar

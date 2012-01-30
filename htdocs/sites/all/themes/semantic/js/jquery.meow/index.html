@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>jQuery Meow Demo</title>
+    <link rel="stylesheet" href="jquery.meow.css" type="text/css" media="screen" title="no title" charset="utf-8">
+    <link rel="stylesheet" href="https://raw.github.com/necolas/normalize.css/master/normalize.css" type="text/css" media="screen">
+    <style>
+      body {
+        font-family: Helvetica, Arial, sans-serif;
+      }
+    </style>
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js" type="text/javascript" charset="utf-8"></script>
+    <script src="jquery.meow.js" type="text/javascript" charset="utf-8"></script>
+    <script>
+      $(document).ready(function() {
+        $.meow({
+          message: $('#onready'),
+          icon: 'nyan-cat.gif'
+        });
+        $('#button').click(function () {
+          $.meow({
+            message: $('#onclick'),
+            icon: 'https://secure.gravatar.com/avatar/c5e99d5ecfaab30b92d9a7cdb34e0e33?s=48'
+          });
+        });
+        $('#onchange').change(function () {
+          $.meow({
+            title: 'I have a defined title!',
+            message: $('#onchange'),
+            icon: 'nyan-cat.gif'
+          });
+        });
+        $('#selectonchange').change(function () {
+          $.meow({
+            message: $('#selectonchange'),
+            icon: 'nyan-cat.gif'
+          });
+        });
+        $('#sticky').click(function () {
+          $.meow({
+            message: 'I\'m a sticky meow!',
+            icon: 'nyan-cat.gif',
+            sticky: true
+          });
+        });
+        $('#uncloseable').click(function () {
+          $.meow({
+            message: 'I am uncloseable!',
+            icon: 'nyan-cat.gif',
+            closeable: false
+          });
+        });
+        $('#callbacks').click(function () {
+          $.meow({
+            message: 'I have callbacks!',
+            icon: 'nyan-cat.gif',
+            beforeCreateFirst: function () {
+              alert(this + ' is the first meow!');
+            },
+            beforeCreate: function () {
+              alert('About to create ' + this);
+            },
+            afterCreate: function () {
+              alert('Just created ' + this);
+            },
+            onTimeout: function () {
+              alert(this + ' just timed out.');
+            },
+            beforeDestroy: function () {
+              alert('About to destroy ' + this);
+            },
+            afterDestroy: function () {
+              alert('And it\'s gone');
+            },
+            afterDestroyLast: function () {
+              alert('There are no meows left :3');
+            }
+          });
+        });
+      });
+    </script>
+  </head>
+
+  <body>
+
+    <h1>jQuery Meow Demo</h1>
+
+    <p>jQuery Meow is a Growl work-alike for notifications in your web app.
+
+    <h2>Ready Demo</h2>
+    <p>
+      <div id="onready">I'll meow upon ready</div>
+    </p>
+
+    <h2>Click Demo</h2>
+    <p>
+      <textarea id="onclick" title="Click Demo" title="Click Demo">I'll meow when you click the button.</textarea><br>
+      <button id="button">Click Me!</button>
+    </p>
+
+    <h2>Change Demo</h2>
+    <p>
+      <textarea id="onchange" title="Change Demo">I'll meow upon changing.</textarea>
+    </p>
+    <p>
+      <select id="selectonchange">
+        <option value="nyan-1">Nyan 1</option>
+        <option value="nyan-2">Nyan 2</option>
+        <option value="nyan-3">Nyan 3</option>
+      </select>
+    </p>
+    <h2>Sticky Demo</h2>
+    <p>This one won't go away until you close it.</p>
+    <p><button id="sticky">Click me!</button></p>
+    <h2>Uncloseable Demo</h2>
+    <p>This one doesn't have a close button (not a good combo with the sticky option!).</p>
+    <p><button id="uncloseable">Click me!</button></p>
+    <h2>Callbacks</h2>
+    <p>Meow supports callbacks</p>
+    <p><button id="callbacks">Click me!</botton></p>
+  </body>
+</html>

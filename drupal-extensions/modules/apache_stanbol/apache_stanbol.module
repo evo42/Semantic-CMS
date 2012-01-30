@@ -1,0 +1,182 @@
+<?php
+set_include_path(get_include_path() . PATH_SEPARATOR . dirname(__FILE__) . '/vendor/easyrdf/lib/');
+require_once 'EasyRdf.php';
+
+/**
+ * @file
+ * Apache Stanbol semantic cms functions
+ */
+
+function apache_stanbol_node_update($node) {
+	//watchdog('apache stanbol', 'apache_stanbol_node_update: '.print_r($node, true));
+	apache_stanbol_node_insert($node);
+}
+
+function apache_stanbol_node_insert($node) {
+	//watchdog('apache stanbol', 'apache_stanbol_node_insert: '.print_r($node, true));
+
+	if ((int) $node->nid < 1) {
+		watchdog('apache stanbol', 'apache_stanbol_node_insert: no valid nid.');
+		return false;
+	}
+	
+	if (!isset($node->field_tags)) {
+		watchdog('apache stanbol', 'field_tags not available.');
+		return false;
+	}
+
+	$stanbol_guid = variable_get('apache_stanbol_guid');
+	$stanbol_url = variable_get('apache_stanbol_url');
+
+	// Render the node.
+	$build = node_view($node, 'search_index');
+	unset($build['#theme']);
+	$node->rendered = drupal_render($build);
+
+	$text = '<h1>' . check_plain($node->title) . '</h1>'."\r\n";
+	$text .= $node->rendered. ' ';
+
+	// Fetch extra data normally not visible
+	$extra = module_invoke_all('node_update_index', $node);
+	foreach ($extra as $t) {
+		$text .= " ".$t." \r\n";
+	}
+
+	// strip html
+	$text = strip_tags($text);
+	$text = check_plain($text);
+	
+	$command = 'curl -i -X PUT -H "Content-Type:text/plain" --data "'.$text.'" '.$stanbol_url.'/contenthub/content/node-'.$node->nid.'-'.$stanbol_guid;
+	$info = shell_exec($command);
+	
+	//watchdog('apache stanbol', 'create new store command: '.$command);
+	//watchdog('apache stanbol', 'create new store item info: '.$info);
+	
+	// get metadata
+	$uri = $stanbol_url.'/contenthub/metadata/node-'.$node->nid.'-'.$stanbol_guid;
+	$metadata = @file_get_contents($uri);
+
+	// stanbol bug fix
+	$encoding = mb_detect_encoding($metadata, 'UTF-8', true);
+	if ($encoding != 'UTF-8') {
+		$metadata = utf8_encode($metadata);
+		//watchdog('apache stanbol', 'needs utf8 encoding');
+	}
+
+	EasyRdf_Namespace::set('rdf', 'http://www.w3.org/1999/02/22-rdf-syntax-ns#');
+	EasyRdf_Namespace::set('purl', 'http://purl.org/dc/terms/');
+	EasyRdf_Namespace::set('stanbol', 'http://fise.iks-project.eu/ontology/');
+
+	$metadata = new EasyRdf_Graph($uri, $metadata);
+	$metadata->load();
+	
+	$resources = $metadata->resources();
+	//watchdog('apache stanbol', 'metadata data: '.print_r($resources, true));
+
+	if (!is_array($resources)) {
+		watchdog('apache stanbol', 'no metadata available.');
+		return false;
+	}
+
+	$i = 0;
+	$annotations = array();
+	foreach($resources as $id => $entities) {
+		//watchdog('apache stanbol',' rdf id: <pre>'.print_r($id, true).'</pre>');
+
+		$res = $metadata->resource($id);
+
+		$label = $res->get('stanbol:entity-label');
+		$confidence = $res->get('stanbol:confidence');
+		$type = $res->get('rdf:type');
+		$reference = $res->get('stanbol:entity-reference');
+		$text = $res->get('stanbol:selected-text');
+
+		if (is_object($label)) {
+			$label = $label->getValue();
+		}
+
+		if (is_object($confidence)) {
+			$confidence = $confidence->getValue();
+		}
+
+		if (is_object($type)) {
+			$type = $type->dumpValue();
+		}
+
+		if (is_object($reference)) {
+			$reference = $reference->getUri();
+		}
+
+		if (is_object($text)) {
+			$text = $text->getValue();
+		}
+			
+		$an = array();
+		$an['confidence'] = $confidence;
+		$an['label'] = $label;
+		$an['reference'] = $reference;
+		//watchdog('apache stanbol', 'annotation: '.print_r($an, true));
+		array_push($annotations, $an);
+	}
+	//watchdog('apache stanbol', 'annotations: '.print_r($annotations, true));
+
+	$entities = array();
+	foreach($annotations as $key => $entity) {
+		if ((int) $entity['confidence'] >= 0) {
+			$entities[strtolower(md5($entity['label']))] = $entity;
+		}
+	}
+	//watchdog('apache stanbol', 'entities: '.print_r($entities, true));
+
+	if (is_array($node->field_tags)) {
+		foreach ($node->field_tags['und'] as $key => $tag) {
+			$term = taxonomy_term_load($tag['tid']);
+
+			$entity = false;
+			if (isset($entities[strtolower(md5($term->name))])) {
+				$entity = $entities[strtolower(md5($term->name))];
+			}
+
+			if ($entity) {
+				//if (empty($term->field_sameas['und'][0]['value'])) {
+					$term->field_sameas['und'][0]['value'] = $entity['reference'];
+					$term->description = 'All content tagged with the term '.$entity['label'].'.';
+					taxonomy_term_save($term);
+				//}
+			}
+		}
+	}
+}
+
+function getRdfValue($value = null) {
+	if (empty($value)) {
+		return false;
+	}
+
+	if (is_array($value)) {
+		foreach( $value as $key => $data ) {
+			if ($data->type == 'value' || $data->type == 'reference' ) {
+				return $data->value;
+			}
+		}
+	}
+
+	return false;
+}
+
+function getRdfText($text = false) {
+	$text = trim($text);
+	if (empty($text)) {
+		return false;
+	}
+
+	if (preg_match('/"(.*)"(.*)/', $text, $m)) {
+		return ($m[1]) ? $m[1] : false;
+	}
+
+	if (preg_match('/^<(.*)>$/', $text, $m)) {
+		return ($m[1]) ? $m[1] : false;
+	}
+
+	return false;
+}

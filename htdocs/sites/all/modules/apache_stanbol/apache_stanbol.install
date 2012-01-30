@@ -1,0 +1,25 @@
+<?php
+/**
+ * @file
+ *  Install & uninstall functions.
+ */
+
+/**
+ * Implementation of hook_uninstall().
+ */
+function apache_stanbol_uninstall() {
+  // Delete settings from varible table.
+  $sql = "DELETE FROM {variable}
+          WHERE name LIKE 'module_apache_stanbol%' OR name LIKE 'apache_stanbol%'";
+  db_query($sql);
+}
+
+/**
+ * Implementation of hook_install().
+ */
+function apache_stanbol_install() {
+	global $base_url;
+	
+	variable_set('apache_stanbol_guid', drupal_hash_base64(drupal_random_bytes(256)));
+	variable_set('apache_stanbol_url', 'http://'.$_SERVER['SERVER_NAME'].':8080/stanbol');
+}

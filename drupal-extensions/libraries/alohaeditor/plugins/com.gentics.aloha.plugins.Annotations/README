@@ -1,0 +1,8 @@
+Aloha Annotations 
+=================
+
+Aloha Annotations is a plugin for Aloha Editor with extends the Aloha Editor
+with the possibility of semantic annotations. With semantic annotations the 
+user should need less time to work with content and should be enabled to 
+produce content in a higher quality. Additionally it should be possible to 
+annotate content transparently for better automatic processing by other systems.
