@@ -1,0 +1,1 @@
+java -Xmx1024m -jar iks-6.0-launcher.jar

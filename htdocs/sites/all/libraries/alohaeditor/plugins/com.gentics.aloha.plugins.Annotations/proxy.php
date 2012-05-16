@@ -16,7 +16,7 @@ function rest_helper($url, $params = null, $verb = 'GET', $format = 'json') {
 			'method' 	=> $verb,
 			'ignore_errors' => true,
 			'header'	=>	"Accept-language: en\r\n" .
-							"Accept: application/json\r\n".
+							"Accept: application/rdf+json\r\n".
 							"Content-type: text/plain\r\n"
 		)
 	);

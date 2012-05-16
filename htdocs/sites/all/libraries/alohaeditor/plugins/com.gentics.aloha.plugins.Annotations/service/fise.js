@@ -30,7 +30,7 @@ GENTICS.Aloha.Annotations.Services.fise.init = function() {
 		alert('ERROR: GENTICS.Aloha.Annotations.settings.Services.fise.ApiEndpoint not defined. Configure your Apache Stanbol ApiEndpoint first.');
 	}
 
-	this.ResponseFormat = "text/plain";
+	this.ResponseFormat = "application/rdf+json"; // text/plain
 	this.repositoryName = 'fise/public';
 };
 
